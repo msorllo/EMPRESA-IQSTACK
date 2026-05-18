@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>IQ STACK - Panel de Cliente</title>
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#27ae60",
+                        "primary-dark": "#006d37",
+                        "surface": "#f0fdf4",
+                        "on-surface": "#1a3a4d",
+                        "neutral": "#64748b",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e2e8f0",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9ff; color: #1a3a4d; }
+        .soft-shadow {
+            box-shadow: 0 4px 24px -4px rgba(26, 58, 77, 0.05);
+        }
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px -4px rgba(26, 58, 77, 0.08);
+        }
+        
+        /* Modal Transitions */
+        .modal-enter { opacity: 0; transform: scale(0.95); }
+        .modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 300ms, transform 300ms; }
+        .modal-exit { opacity: 1; transform: scale(1); }
+        .modal-exit-active { opacity: 0; transform: scale(0.95); transition: opacity 300ms, transform 300ms; }
+        
+        /* Toast Notification */
+        #toast { transition: bottom 0.3s ease-in-out, opacity 0.3s; z-index: 100; }
+
+        /* Tilt Cards */
+        .tilt-card {
+            position: relative;
+            perspective: 1200px;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tilt-card__inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(26, 58, 77, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), 
+                        box-shadow 0.6s ease, 
+                        border-color 0.6s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tilt-card__inner:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(39, 174, 96, 0.2);
+            border-color: rgba(39, 174, 96, 0.5);
+        }
+
+        .tilt-card__content {
+            position: relative;
+            z-index: 1;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="antialiased min-h-screen flex flex-col lg:flex-row relative">
+
+    <!-- Pantalla de Autenticación (Login/Register) -->
+    <div id="auth-view" class="fixed inset-0 bg-[#f8f9ff] z-[100] flex flex-col items-center justify-center overflow-y-auto py-10">
+        <div class="mb-8 text-center">
+            <span class="material-symbols-outlined text-primary text-6xl mb-2 hover-lift">eco</span>
+            <h1 class="text-4xl font-bold text-primary">IQ STACK</h1>
+            <p class="text-neutral mt-2 font-medium">Plataforma Ecológica</p>
+        </div>
+        
+        <div class="bg-white p-8 rounded-2xl soft-shadow border border-gray-100 w-full max-w-sm relative overflow-hidden">
+            <div id="auth-error" class="hidden mb-4 bg-red-50 text-error p-3 rounded-lg text-sm font-semibold text-center border border-red-100"></div>
+            <div id="auth-success" class="hidden mb-4 bg-green-50 text-primary p-3 rounded-lg text-sm font-semibold text-center border border-green-100"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <h2 class="text-xl font-bold text-on-surface mb-6 text-center">Iniciar Sesión</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Correo Electrónico</label>
+                    <input type="email" id="login-email" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" value="rosa@panaderialopez.com" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Contraseña</label>
+                    <input type="password" id="login-password" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" value="password123" required>
+                </div>
+                <button type="submit" id="btn-login" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition shadow-md flex justify-center items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">login</span> Entrar
+                </button>
+                <p class="text-sm text-center mt-4 text-neutral">¿No tienes cuenta? <a href="#" onclick="toggleAuth()" class="text-primary font-bold hover:underline">Regístrate</a></p>
+                
+                <div class="mt-6 border-t pt-4">
+                    <p class="text-xs font-semibold text-neutral text-center mb-2">Accesos directos (Demo):</p>
+                    <div class="flex gap-2 text-xs">
+                        <button type="button" class="flex-1 bg-gray-50 p-2 rounded hover:bg-gray-100 border font-medium" onclick="document.getElementById('login-email').value='admin@iqstack.es'; document.getElementById('login-password').value='admin123';">Admin</button>
+                        <button type="button" class="flex-1 bg-gray-50 p-2 rounded hover:bg-gray-100 border font-medium" onclick="document.getElementById('login-email').value='rosa@panaderialopez.com'; document.getElementById('login-password').value='password123';">Cliente</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+                <h2 class="text-xl font-bold text-on-surface mb-6 text-center">Crear Cuenta</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Correo Electrónico</label>
+                    <input type="email" id="register-email" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Contraseña</label>
+                    <input type="password" id="register-password" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Rol / Tipo de Acceso</label>
+                    <select id="register-role" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                        <option value="Client_PYME">Cliente PYME (Rosa)</option>
+                        <option value="Client_ONG">Cliente ONG (Descuento 20%)</option>
+                        <option value="Support_Tech">Técnico de Soporte (Unai)</option>
+                        <option value="Admin_Global">Administrador Global (Fundador)</option>
+                    </select>
+                </div>
+                <button type="submit" id="btn-register" class="w-full bg-on-surface text-white font-bold py-3 rounded-xl hover:bg-neutral transition shadow-md flex justify-center items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">person_add</span> Registrarme
+                </button>
+                <p class="text-sm text-center mt-4 text-neutral">¿Ya tienes cuenta? <a href="#" onclick="toggleAuth()" class="text-primary font-bold hover:underline">Inicia Sesión</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Menú Lateral (Desktop) -->
+    <nav id="desktop-nav" class="hidden lg:flex flex-col fixed left-0 top-0 h-full p-6 z-40 bg-white shadow-sm w-64 rounded-r-2xl border-r border-gray-100 transition-transform duration-300">
+        <div class="mb-10 px-2">
+            <a href="index.html" class="flex items-center gap-2 cursor-pointer">
+                <span class="material-symbols-outlined text-primary text-3xl">eco</span>
+                <h1 class="text-2xl font-bold text-primary">IQ STACK</h1>
+            </a>
+            <p class="text-xs font-semibold text-neutral mt-2 uppercase tracking-wider" id="panel-role-title">Panel de Cliente</p>
+        </div>
+        
+        <ul class="flex flex-col gap-2 flex-grow" id="nav-list">
+            <li>
+                <a class="nav-link active flex items-center gap-3 px-4 py-3 bg-green-50 text-primary rounded-xl font-bold transition-colors cursor-pointer" data-target="view-dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    Resumen
+                </a>
+            </li>
+            <li>
+                <a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium transition-colors cursor-pointer" data-target="view-planes">
+                    <span class="material-symbols-outlined">dns</span>
+                    Mis Planes
+                </a>
+            </li>
+            <li>
+                <a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium transition-colors cursor-pointer" data-target="view-eco">
+                    <span class="material-symbols-outlined">eco</span>
+                    Métricas Ecológicas
+                </a>
+            </li>
+            <li>
+                <a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium transition-colors cursor-pointer" data-target="view-facturas">
+                    <span class="material-symbols-outlined">payments</span>
+                    Facturación
+                </a>
+            </li>
+            <li>
+                <a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium transition-colors cursor-pointer" data-target="view-soporte">
+                    <span class="material-symbols-outlined">support_agent</span>
+                    Soporte Humano
+                </a>
+            </li>
+            <li>
+                <a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium transition-colors cursor-pointer" data-target="view-accesos">
+                    <span class="material-symbols-outlined">shield_person</span>
+                    Gestión de Accesos
+                </a>
+            </li>
+        </ul>
+        
+        <div class="mt-auto">
+            <div class="bg-surface rounded-xl p-4 mb-4 text-center border border-green-100">
+                <p class="text-xs text-neutral mb-2">Plan Actual:</p>
+                <p class="font-bold text-on-surface" id="sidebar-plan-name">Cargando...</p>
+                <div class="mt-3 bg-white rounded-full text-xs font-bold text-primary py-1 px-2 inline-block shadow-sm">Activo</div>
+            </div>
+            <button onclick="openTicketModal()" class="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition-transform active:scale-95 shadow-md flex justify-center items-center gap-2">
+                <span class="material-symbols-outlined">add_circle</span>
+                Nuevo Ticket
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menú Superior (Mobile) -->
+    <header class="lg:hidden flex justify-between items-center px-4 h-20 w-full bg-white border-b border-gray-100 sticky top-0 z-30 shadow-sm">
+        <a href="index.html" class="flex items-center gap-2 text-primary font-bold text-xl">
+            <span class="material-symbols-outlined">eco</span>
+            IQ STACK
+        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="toggleMobileMenu()" class="text-neutral p-2 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Drawer Overlay -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleMobileMenu()"></div>
+
+    <!-- Mobile Drawer Content -->
+    <div id="mobile-menu" class="fixed top-0 right-0 h-full w-64 bg-white z-50 transform translate-x-full transition-transform duration-300 lg:hidden flex flex-col p-6">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="font-bold text-lg text-primary">Menú</h2>
+            <button onclick="toggleMobileMenu()" class="text-neutral p-1 rounded hover:bg-gray-100">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <ul class="flex flex-col gap-2 flex-grow">
+            <li><a class="nav-link-mobile block p-3 bg-green-50 text-primary font-bold rounded-lg" data-target="view-dashboard" onclick="toggleMobileMenu()">Resumen</a></li>
+            <li><a class="nav-link-mobile block p-3 text-neutral font-medium hover:bg-gray-50 rounded-lg" data-target="view-planes" onclick="toggleMobileMenu()">Mis Planes</a></li>
+            <li><a class="nav-link-mobile block p-3 text-neutral font-medium hover:bg-gray-50 rounded-lg" data-target="view-eco" onclick="toggleMobileMenu()">Métricas Ecológicas</a></li>
+            <li><a class="nav-link-mobile block p-3 text-neutral font-medium hover:bg-gray-50 rounded-lg" data-target="view-facturas" onclick="toggleMobileMenu()">Facturación</a></li>
+            <li><a class="nav-link-mobile block p-3 text-neutral font-medium hover:bg-gray-50 rounded-lg" data-target="view-soporte" onclick="toggleMobileMenu()">Soporte Humano</a></li>
+            <li><a class="nav-link-mobile block p-3 text-neutral font-medium hover:bg-gray-50 rounded-lg" data-target="view-accesos" onclick="toggleMobileMenu()">Gestión de Accesos</a></li>
+        </ul>
+        <button onclick="toggleMobileMenu(); openTicketModal();" class="mt-auto w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-dark transition shadow-md flex justify-center items-center gap-2">
+            <span class="material-symbols-outlined">add_circle</span>
+            Nuevo Ticket
+        </button>
+    </div>
+
+    <!-- Área Principal de Contenido -->
+    <main class="flex-1 lg:ml-64 p-4 lg:p-10 max-w-7xl mx-auto w-full relative">
+        
+        <!-- Cabecera Global -->
+        <div class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div>
+                <h2 class="text-3xl lg:text-4xl font-bold text-on-surface mb-2" id="header-client-welcome">Bienvenida, Rosa</h2>
+                <p class="text-neutral text-lg" id="header-client-company">Panadería López SL • Panel de control y monitorización.</p>
+            </div>
+            <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm cursor-help" title="Servidores alimentados 100% por energía renovable">
+                <span class="material-symbols-outlined text-yellow-500 animate-pulse">wb_sunny</span>
+                <span class="font-semibold text-on-surface">Conectado a Red Solar</span>
+            </div>
+        </div>
+
+        <!-- ================= VISTAS DINÁMICAS ================= -->
+
+        <!-- VISTA: DASHBOARD (Principal) -->
+        <div id="view-dashboard" class="view-section block">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Tarjeta 1: Energía en Tiempo Real -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift flex flex-col justify-between h-full col-span-1 md:col-span-2 lg:col-span-1">
+                    <div class="flex justify-between items-start mb-6">
+                        <h3 class="font-bold text-lg text-on-surface">Energía (Mes Actual)</h3>
+                        <span class="material-symbols-outlined text-primary">bolt</span>
+                    </div>
+                    <div class="flex justify-around items-center flex-grow">
+                        <!-- Generación -->
+                        <div class="relative w-28 h-28 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle class="text-gray-100" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+                                <circle id="circle-gen" class="text-primary transition-all duration-1000" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="30" stroke-linecap="round" stroke-width="8"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span class="text-xs text-neutral font-medium uppercase tracking-wider">Gen</span>
+                                <span id="val-gen" class="text-2xl font-bold text-on-surface">74.6</span>
+                                <span class="text-[10px] text-neutral">kWh</span>
+                            </div>
+                        </div>
+                        <!-- Consumo -->
+                        <div class="relative w-28 h-28 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle class="text-gray-100" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+                                <circle id="circle-con" class="text-blue-500 transition-all duration-1000" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="200" stroke-linecap="round" stroke-width="8"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span class="text-xs text-neutral font-medium uppercase tracking-wider">Con</span>
+                                <span id="val-con" class="text-2xl font-bold text-on-surface">12.8</span>
+                                <span class="text-[10px] text-neutral">kWh</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <span class="text-sm font-semibold text-primary bg-green-50 px-3 py-1 rounded-full cursor-pointer hover:bg-green-100 transition" onclick="showToast('El 100% de tu consumo proviene de nuestras placas solares.')">Renovable 100%</span>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2: Gráfico Historial -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift col-span-1 md:col-span-2">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-lg text-on-surface">Historial Energético (kWh)</h3>
+                        <span class="material-symbols-outlined text-neutral">stacked_line_chart</span>
+                    </div>
+                    <div class="h-48 w-full relative">
+                        <canvas id="energyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 3: Impacto Medioambiental -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift flex flex-col items-center justify-center text-center col-span-1">
+                    <div class="flex w-full justify-between items-start mb-auto">
+                        <h3 class="font-bold text-lg text-on-surface text-left">Impacto Ecológico</h3>
+                    </div>
+                    <div class="w-36 h-36 rounded-full border-8 border-primary flex flex-col items-center justify-center my-4 relative shadow-inner hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-1 rounded-full bg-green-50"></div>
+                        <span class="material-symbols-outlined text-primary text-4xl mb-1 z-10">cloud</span>
+                        <span class="text-3xl font-bold text-on-surface z-10" id="dash-co2-val">44.6</span>
+                        <span class="text-xs font-semibold text-neutral z-10">kg CO₂ Evitados</span>
+                    </div>
+                    <p class="text-sm text-neutral mt-2" id="dash-trees-val">Equivalente a plantar <span class="font-bold text-primary">2 árboles</span>.</p>
+                </div>
+
+                <!-- Tarjeta 4: Batería -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift flex flex-col justify-between col-span-1">
+                    <div class="flex justify-between items-start mb-6">
+                        <h3 class="font-bold text-lg text-on-surface">Reserva Data Center</h3>
+                        <span class="material-symbols-outlined text-neutral">battery_charging_full</span>
+                    </div>
+                    <div class="flex-grow flex flex-col justify-center">
+                        <div class="flex justify-between items-end mb-2">
+                            <span id="battery-val" class="text-4xl font-bold text-on-surface">85%</span>
+                            <span class="text-sm font-medium text-neutral mb-1 animate-pulse">Cargando (Solar)</span>
+                        </div>
+                        <div class="h-8 w-full bg-gray-100 rounded-full overflow-hidden p-1 flex gap-1">
+                            <div id="bat-1" class="h-full flex-1 bg-primary rounded-l-full transition-colors duration-500"></div>
+                            <div id="bat-2" class="h-full flex-1 bg-primary transition-colors duration-500"></div>
+                            <div id="bat-3" class="h-full flex-1 bg-primary transition-colors duration-500"></div>
+                            <div id="bat-4" class="h-full flex-1 bg-gray-200 rounded-r-full transition-colors duration-500"></div>
+                        </div>
+                        <p class="text-xs text-neutral mt-4 text-center">Autonomía para 72 horas sin luz solar.</p>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 5: Soporte Humano -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift col-span-1 lg:col-span-1 flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-lg text-on-surface">Soporte Técnico</h3>
+                        <span class="material-symbols-outlined text-neutral">forum</span>
+                    </div>
+                    
+                    <div id="ticket-container" class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-auto hover:bg-blue-100 transition cursor-pointer" onclick="showToast('Abriendo detalles del ticket en el chat en vivo...')">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded">EN CURSO</span>
+                            <span class="text-xs text-neutral">Hoy 10:45</span>
+                        </div>
+                        <h4 class="font-semibold text-on-surface text-sm mb-1 line-clamp-2">El correo del dominio no llega a los destinatarios</h4>
+                        <p class="text-xs text-neutral mb-3">Técnico: <span class="font-semibold text-on-surface">Unai García</span></p>
+                        <span class="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                            Ver chat <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Tarjeta 6: Última Factura -->
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift col-span-1 lg:col-span-1 flex flex-col">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="font-bold text-lg text-on-surface">Última Factura</h3>
+                        <span class="material-symbols-outlined text-neutral">receipt_long</span>
+                    </div>
+                    
+                    <div class="flex-grow flex flex-col justify-center" id="dash-invoice-container">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+                            <div>
+                                <p class="font-bold text-on-surface">INV-2026-0001</p>
+                                <p class="text-xs text-neutral">Emitida: 01/04/2026</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-on-surface">12.09€</p>
+                                <span class="text-xs font-bold text-primary bg-green-50 px-2 py-1 rounded">PAGADA</span>
+                            </div>
+                        </div>
+                        <button onclick="descargarFactura()" class="w-full text-center text-sm font-semibold text-on-surface border border-gray-200 rounded-lg py-2 hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            Descargar PDF
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- VISTA: MIS PLANES -->
+        <div id="view-planes" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold text-on-surface">Mis Planes</h2>
+                    <button onclick="switchView('view-dashboard')" class="text-sm font-medium text-neutral hover:bg-gray-50 px-3 py-1 rounded">Volver al Resumen</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Plan Standard -->
+                    <div class="tilt-card h-full">
+                        <div class="tilt-card__inner">
+                            <div class="tilt-card__content">
+                                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                    <span class="material-symbols-outlined text-3xl">storefront</span>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-2">Standard</h3>
+                                <p class="text-neutral mb-6 flex-grow">Para webs corporativas y tiendas pequeñas. Todo lo esencial.</p>
+                                <div class="mb-6">
+                                    <span class="text-4xl font-bold">9.99€</span><span class="text-neutral">/mes</span>
+                                </div>
+                                <ul class="space-y-3 mb-8">
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 50 GB Almacenamiento</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Certificado SSL Incluido</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Copias de seguridad semanales</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Eco-Dashboard</li>
+                                </ul>
+                                <button class="w-full py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition mt-auto">Contratar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Plan Premium -->
+                    <div class="tilt-card h-full">
+                        <div class="tilt-card__inner border-primary shadow-lg" style="border-width: 2px;">
+                            <div class="tilt-card__content">
+                                <div class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>
+                                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                    <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-2">Premium</h3>
+                                <p class="text-neutral mb-6 flex-grow">Para e-commerce y aplicaciones web de alto tráfico.</p>
+                                <div class="mb-6">
+                                    <span class="text-4xl font-bold">24.99€</span><span class="text-neutral">/mes</span>
+                                </div>
+                                <ul class="space-y-3 mb-8">
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 200 GB Almacenamiento</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Recursos Dedicados</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Copias de seguridad diarias</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Soporte Prioritario Humano</li>
+                                </ul>
+                                <button class="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark transition mt-auto">Contratar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Plan Assisted -->
+                    <div class="tilt-card h-full">
+                        <div class="tilt-card__inner">
+                            <div class="tilt-card__content">
+                                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                    <span class="material-symbols-outlined text-3xl">support_agent</span>
+                                </div>
+                                <h3 class="text-2xl font-bold mb-2">Assisted</h3>
+                                <p class="text-neutral mb-6 flex-grow">Servicio totalmente gestionado para clientes sin equipo técnico.</p>
+                                <div class="mb-6">
+                                    <span class="text-4xl font-bold">49.99€</span><span class="text-neutral">/mes</span>
+                                </div>
+                                <ul class="space-y-3 mb-8">
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 500 GB Almacenamiento</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Migración y Mantenimiento</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Actualizaciones del sistema</li>
+                                    <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Soporte telefónico ilimitado</li>
+                                </ul>
+                                <button class="w-full py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition mt-auto">Contratar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: MÉTRICAS ECOLÓGICAS -->
+        <div id="view-eco" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold text-on-surface">Métricas Ecológicas</h2>
+                    <button onclick="switchView('view-dashboard')" class="text-sm font-medium text-neutral hover:bg-gray-50 px-3 py-1 rounded">Volver al Resumen</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Gráfico de barras energía -->
+                    <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-lg text-on-surface">Energía Generada vs Consumida (kWh)</h3>
+                            <span class="material-symbols-outlined text-neutral">bar_chart</span>
+                        </div>
+                        <div class="h-48 w-full relative">
+                            <canvas id="ecoBarChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Tabla de métricas mensuales -->
+                    <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-lg text-on-surface">Historial Mensual</h3>
+                            <span class="material-symbols-outlined text-neutral">table_chart</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mes</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generada (kWh)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consumida (kWh)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ahorrada (kWh)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CO2 Evitado (kg)</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Renovable</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="client-eco-tbody" class="divide-y divide-gray-200">
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Enero 2026</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">45.200</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12.500</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">32.700</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">7.619</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Febrero 2026</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">52.800</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">11.200</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">41.600</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">9.693</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Marzo 2026</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">68.400</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">13.100</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">55.300</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12.885</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100.00</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Abril 2026</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">74.600</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12.800</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">61.800</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">14.399</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">100.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: FACTURACIÓN -->
+        <div id="view-facturas" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold text-on-surface">Facturación</h2>
+                    <button onclick="switchView('view-dashboard')" class="text-sm font-medium text-neutral hover:bg-gray-50 px-3 py-1 rounded">Volver al Resumen</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Factura</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Emisión</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Vencimiento</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Imponible (€)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IVA (%)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IVA (€)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total (€)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="client-invoices-tbody" class="divide-y divide-gray-200">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">INV-2026-0001</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">01/04/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/04/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Plan Standard — Alojamiento mensual (Abril 2026)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">9.99</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">21.00</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.10</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">12.09</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-font-medium text-green-600">PAGADA</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">INV-2026-0002</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">01/04/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/04/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Plan Premium — Alojamiento mensual (Abril 2026) + Descuento ONG 20%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">24.99</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">0.00</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">0.00</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">19.99</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-font-medium text-green-600">PAGADA</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">INV-2026-0003</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">01/05/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15/05/2026</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Plan Assisted — Alojamiento mensual (Mayo 2026)</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">49.99</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">21.00</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10.50</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">60.49</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-font-medium text-red-600">PENDIENTE</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="showToast('Descargando factura seleccionada...', 'hourglass_empty')" class="bg-primary text-white px-4 py-2 rounded hover:bg-primary-dark transition">Descargar PDF</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: SOPORTE HUMANO -->
+        <div id="view-soporte" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold text-on-surface">Soporte Humano</h2>
+                    <button onclick="switchView('view-dashboard')" class="text-sm font-medium text-neutral hover:bg-gray-50 px-3 py-1 rounded">Volver al Resumen</button>
+                </div>
+                <div id="client-tickets-container" class="space-y-6">
+                    <!-- Ticket existente -->
+                    <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift cursor-pointer" onclick="openTicketModal()">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-lg text-on-surface">Ticket en Curso</h3>
+                            <span class="material-symbols-outlined text-neutral">forum</span>
+                        </div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold bg-blue-200 text-blue-800 px-2 py-1 rounded">EN CURSO</span>
+                            <span class="text-xs text-neutral">Hoy 10:45</span>
+                        </div>
+                        <h4 class="font-semibold text-on-surface text-sm mb-1 line-clamp-2">El correo electrónico del dominio no llega a los destinatarios</h4>
+                        <p class="text-xs text-neutral mb-3">Técnico: <span class="font-semibold text-on-surface">Unai García</span></p>
+                        <span class="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                            Ver chat <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </span>
+                    </div>
+                    <!-- Historial de tickets -->
+                    <div class="border-t pt-4">
+                        <h3 class="font-bold text-lg text-on-surface mb-4">Historial de Tickets</h3>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-semibold text-on-surface text-sm">Ticket Resuelto</h4>
+                                    <p class="text-xs text-neutral">02/04/2026 • Configuración de certificado SSL</p>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold bg-green-200 text-green-800 px-2 py-1 rounded">RESUELTO</span>
+                                    <span class="text-xs text-neutral">Técnico: Marco Sorlí</span>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-semibold text-on-surface text-sm">Ticket Abierto</h4>
+                                    <p class="text-xs text-neutral">05/05/2026 • Problema con pasarela de pago</p>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold bg-yellow-200 text-yellow-800 px-2 py-1 rounded">ABIERTO</span>
+                                    <span class="text-xs text-neutral">Técnico: Andrei Chivu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button onclick="openTicketModal()" class="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition shadow-md flex items-center gap-2">
+                        <span class="material-symbols-outlined">add_circle</span>
+                        Nuevo Ticket
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- VISTA: GESTIÓN DE ACCESOS -->
+        <div id="view-accesos" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                <div class="flex justify-between items-start mb-6">
+                    <h2 class="text-3xl font-bold text-on-surface">Gestión de Accesos y Roles</h2>
+                    <button onclick="switchView('view-dashboard')" class="text-sm font-medium text-neutral hover:bg-gray-50 px-3 py-1 rounded">Volver al Resumen</button>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <h3 class="font-bold text-lg text-on-surface mb-2">Administradores del Proyecto</h3>
+                        <p class="text-sm text-neutral mb-4">Usuarios con acceso total de lectura y escritura al panel de Panadería López SL.</p>
+                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold">RL</div>
+                                <div>
+                                    <p class="font-bold text-sm">Rosa López Alarcón</p>
+                                    <p class="text-xs text-neutral">info@panaderialopez.com</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold bg-purple-100 text-purple-800 px-2 py-1 rounded">PROPIETARIO (Client_PYME)</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <h3 class="font-bold text-lg text-on-surface mb-2">Soporte Delegado IQ STACK</h3>
+                        <p class="text-sm text-neutral mb-4">Técnicos de IQ STACK con permisos temporales para resolución de incidencias (Solo lectura/configuración).</p>
+                        <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-gray-200">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">UG</div>
+                                <div>
+                                    <p class="font-bold text-sm">Unai García</p>
+                                    <p class="text-xs text-neutral">unai.garcia@iqstack.es</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded">SOPORTE TÉCNICO (Support_Tech)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA: PLACEHOLDER (Para otras secciones) -->
+        <div id="view-placeholder" class="view-section hidden">
+            <div class="bg-white rounded-2xl p-10 soft-shadow border border-gray-100 text-center py-20">
+                <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">construction</span>
+                <h3 class="text-2xl font-bold text-on-surface mb-2">Sección en Construcción</h3>
+                <p class="text-neutral">Esta pantalla del panel está siendo migrada a la nueva infraestructura web.</p>
+                <button onclick="switchView('view-dashboard')" class="mt-6 bg-primary text-white px-6 py-2 rounded-xl font-semibold hover:bg-primary-dark transition">Volver al Resumen</button>
+            </div>
+        </div>
+
+        <!-- VISTA: ADMIN DASHBOARD (Solo Administradores) -->
+        <div id="view-admin" class="view-section hidden">
+            <!-- Pestaña 1: Control Global y Clientes -->
+            <div id="admin-tab-clients" class="admin-tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Panel Clientes -->
+                    <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 col-span-1 lg:col-span-2">
+                        <div class="flex justify-between items-center mb-6 border-b pb-4">
+                            <h2 class="text-2xl font-bold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">groups</span> Gestión Global de Clientes</h2>
+                            <button class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary-dark transition flex items-center gap-2" onclick="openAdminClientModal()"><span class="material-symbols-outlined text-sm">person_add</span> Crear Cliente</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-gray-50 text-neutral text-xs uppercase">
+                                    <tr>
+                                        <th class="p-3">Compañía / Email</th>
+                                        <th class="p-3">CIF</th>
+                                        <th class="p-3">Plan / Precio</th>
+                                        <th class="p-3">Estado / Rol</th>
+                                        <th class="p-3">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-clients-tbody">
+                                    <!-- Cargado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Métricas y Estadísticas de Servidores -->
+                    <div class="col-span-1 flex flex-col gap-6">
+                        <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                            <h3 class="font-bold text-lg text-on-surface mb-4 border-b pb-2">Recursos Servidores</h3>
+                            <div class="flex justify-between mb-2"><span class="text-sm text-neutral">Carga CPU</span><span class="text-sm font-bold text-green-600">18%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2 mb-4"><div class="bg-green-500 h-2 rounded-full" style="width: 18%"></div></div>
+                            
+                            <div class="flex justify-between mb-2"><span class="text-sm text-neutral">Memoria RAM</span><span class="text-sm font-bold text-yellow-600">42%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2 mb-4"><div class="bg-yellow-500 h-2 rounded-full" style="width: 42%"></div></div>
+
+                            <div class="flex justify-between mb-2"><span class="text-sm text-neutral">Almacenamiento SSD</span><span class="text-sm font-bold text-primary">31%</span></div>
+                            <div class="w-full bg-gray-100 rounded-full h-2"><div class="bg-primary h-2 rounded-full" style="width: 31%"></div></div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 flex-grow">
+                            <h3 class="font-bold text-lg text-on-surface mb-4 border-b pb-2">Impacto Ecológico Total</h3>
+                            <div class="text-center py-6">
+                                <span class="material-symbols-outlined text-green-500 text-5xl animate-bounce">eco</span>
+                                <p class="text-3xl font-bold text-primary mt-2">1,245.8 kg</p>
+                                <p class="text-xs text-neutral uppercase font-bold mt-1">CO2 Ahorrado Global</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pestaña 2: Gestión de Soporte Global -->
+            <div id="admin-tab-tickets" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                    <h2 class="text-2xl font-bold text-on-surface mb-6 border-b pb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">forum</span> Panel de Soporte Humano Global</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-neutral text-xs uppercase">
+                                <tr>
+                                    <th class="p-3">Cliente</th>
+                                    <th class="p-3">Asunto</th>
+                                    <th class="p-3">Prioridad</th>
+                                    <th class="p-3">Estado</th>
+                                    <th class="p-3">Fecha Creación</th>
+                                    <th class="p-3">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-tickets-tbody">
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pestaña 3: Gestión de Facturación Global -->
+            <div id="admin-tab-invoices" class="admin-tab-content hidden">
+                <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100">
+                    <div class="flex justify-between items-center mb-6 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">receipt_long</span> Facturación de Clientes</h2>
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary-dark transition flex items-center gap-2" onclick="openAdminInvoiceModal()"><span class="material-symbols-outlined text-sm">paid</span> Emitir Factura</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-neutral text-xs uppercase">
+                                <tr>
+                                    <th class="p-3">Factura nº</th>
+                                    <th class="p-3">Cliente</th>
+                                    <th class="p-3">Fecha Emisión</th>
+                                    <th class="p-3">Base Imponible</th>
+                                    <th class="p-3">IVA</th>
+                                    <th class="p-3">Total</th>
+                                    <th class="p-3">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-invoices-tbody">
+                                <!-- Cargado dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= MODALS & TOASTS ================= -->
+
+    <!-- Modal Nuevo Ticket (Cliente) -->
+    <div id="ticket-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl transform scale-95 transition-transform duration-300" id="ticket-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">support_agent</span>
+                    Crear Nuevo Ticket
+                </h3>
+                <button onclick="closeTicketModal()" class="text-neutral hover:text-error transition">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <form id="form-ticket" onsubmit="submitTicket(event)">
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Prioridad</label>
+                    <select id="ticket-priority" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                        <option value="LOW">Baja (Consultas generales)</option>
+                        <option value="MEDIUM" selected>Media (Incidencias menores)</option>
+                        <option value="HIGH">Alta (Problemas que afectan al servicio)</option>
+                        <option value="CRITICAL">Crítica (Caída total del servicio)</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Asunto</label>
+                    <input type="text" id="ticket-title" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" placeholder="Ej: Problemas con el certificado SSL" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-on-surface mb-1">Descripción detallada</label>
+                    <textarea id="ticket-desc" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm h-32" placeholder="Explica detalladamente lo que ocurre. Un humano leerá esto en unos minutos." required></textarea>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeTicketModal()" class="px-5 py-2 text-sm font-bold text-neutral hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-bold bg-primary text-white hover:bg-primary-dark rounded-xl shadow-md transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">send</span>
+                        Enviar Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Crear Cliente (Admin) -->
+    <div id="admin-client-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl transform scale-95 transition-transform duration-300 overflow-y-auto max-h-[90vh]" id="admin-client-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">person_add</span>
+                    Registrar Nuevo Cliente
+                </h3>
+                <button onclick="closeAdminClientModal()" class="text-neutral hover:text-error transition">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <form id="form-admin-client" onsubmit="submitAdminClient(event)">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Email Acceso</label>
+                        <input type="email" id="ac-email" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Contraseña</label>
+                        <input type="password" id="ac-password" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Razón Social</label>
+                        <input type="text" id="ac-company" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" placeholder="Ej: Panadería López SL" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">CIF / NIF</label>
+                        <input type="text" id="ac-cif" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" placeholder="Ej: B12345678" required>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Tipo Cliente</label>
+                        <select id="ac-type" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                            <option value="PYME">PYME (Tarifa normal)</option>
+                            <option value="ONG">ONG (20% Descuento automático)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Teléfono</label>
+                        <input type="text" id="ac-phone" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-neutral uppercase mb-1">Dirección</label>
+                    <input type="text" id="ac-address" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Ciudad</label>
+                        <input type="text" id="ac-city" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Provincia</label>
+                        <input type="text" id="ac-province" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral uppercase mb-1">Plan Inicial</label>
+                        <select id="ac-plan" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                            <option value="1">Standard Eco (15€/mes)</option>
+                            <option value="2">Premium Eco (35€/mes)</option>
+                            <option value="3">Assisted Eco (75€/mes)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeAdminClientModal()" class="px-5 py-2 text-sm font-bold text-neutral hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-bold bg-primary text-white hover:bg-primary-dark rounded-xl shadow-md transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                        Crear Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Responder Ticket (Admin) -->
+    <div id="admin-ticket-reply-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]" id="admin-ticket-reply-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-on-surface" id="admin-ticket-title">Responder Ticket</h3>
+                    <p class="text-xs text-neutral" id="admin-ticket-subtitle"></p>
+                </div>
+                <button onclick="closeAdminTicketReplyModal()" class="text-neutral hover:text-error transition">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Conversación -->
+            <div class="bg-gray-50 flex-grow rounded-xl p-4 overflow-y-auto flex flex-col gap-3 mb-4 h-64 border border-gray-100" id="admin-ticket-messages-container">
+                <!-- Se cargan dinámicamente -->
+            </div>
+            
+            <form id="form-admin-ticket-reply" onsubmit="submitAdminTicketReply(event)" class="flex gap-2">
+                <input type="hidden" id="admin-reply-ticket-id">
+                <input type="text" id="admin-reply-message" placeholder="Escribe tu respuesta humana..." class="flex-grow border-gray-300 rounded-xl shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                <button type="submit" class="bg-primary text-white p-3 rounded-xl hover:bg-primary-dark shadow-md transition flex items-center justify-center">
+                    <span class="material-symbols-outlined">send</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Responder Ticket (Cliente) -->
+    <div id="client-ticket-reply-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[85vh]" id="client-ticket-reply-modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-on-surface" id="client-ticket-title">Conversación de Soporte</h3>
+                    <p class="text-xs text-neutral" id="client-ticket-subtitle"></p>
+                </div>
+                <button onclick="closeClientTicketReplyModal()" class="text-neutral hover:text-error transition">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <!-- Conversación -->
+            <div class="bg-gray-50 flex-grow rounded-xl p-4 overflow-y-auto flex flex-col gap-3 mb-4 h-64 border border-gray-100" id="client-ticket-messages-container">
+                <!-- Se cargan dinámicamente -->
+            </div>
+            
+            <form id="form-client-ticket-reply" onsubmit="submitClientTicketReply(event)" class="flex gap-2">
+                <input type="hidden" id="client-reply-ticket-id">
+                <input type="text" id="client-reply-message" placeholder="Escribe tu mensaje..." class="flex-grow border-gray-300 rounded-xl shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                <button type="submit" class="bg-primary text-white p-3 rounded-xl hover:bg-primary-dark shadow-md transition flex items-center justify-center">
+                    <span class="material-symbols-outlined">send</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Emitir Factura (Admin) -->
+    <div id="admin-invoice-modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300 backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl transform scale-95 transition-transform duration-300" id="admin-invoice-modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">receipt_long</span>
+                    Emitir Factura Manual
+                </h3>
+                <button onclick="closeAdminInvoiceModal()" class="text-neutral hover:text-error transition">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <form id="form-admin-invoice" onsubmit="submitAdminInvoice(event)">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-neutral uppercase mb-1">Seleccionar Cliente</label>
+                    <select id="ai-client" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" required>
+                        <!-- Cargados dinámicamente -->
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-neutral uppercase mb-1">Concepto / Descripción</label>
+                    <input type="text" id="ai-description" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" placeholder="Ej: Ampliación de almacenamiento SSD" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-neutral uppercase mb-1">Base Imponible (€)</label>
+                    <input type="number" step="0.01" id="ai-amount" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-primary focus:border-primary text-sm" placeholder="Ej: 49.99" required>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeAdminInvoiceModal()" class="px-5 py-2 text-sm font-bold text-neutral hover:bg-gray-100 rounded-xl transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-bold bg-primary text-white hover:bg-primary-dark rounded-xl shadow-md transition flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">paid</span>
+                        Emitir Factura
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-[-100px] left-1/2 transform -translate-x-1/2 bg-on-surface text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-50 opacity-0 pointer-events-none">
+        <span class="material-symbols-outlined text-primary" id="toast-icon">check_circle</span>
+        <span id="toast-msg" class="font-medium text-sm">Acción completada</span>
+    </div>
+
+    <!-- ================= JAVASCRIPT LÓGICA FRONTEND ================= -->
+    <script>
+        // 0. LÓGICA DE AUTENTICACIÓN (Login & Registro)
+        const toggleAuth = () => {
+            const login = document.getElementById('login-form');
+            const register = document.getElementById('register-form');
+            const err = document.getElementById('auth-error');
+            const suc = document.getElementById('auth-success');
+            err.classList.add('hidden');
+            suc.classList.add('hidden');
+            
+            if (login.classList.contains('hidden')) {
+                login.classList.remove('hidden');
+                register.classList.add('hidden');
+            } else {
+                login.classList.add('hidden');
+                register.classList.remove('hidden');
+            }
+        };
+
+        const handleRegister = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const pass = document.getElementById('register-password').value;
+            const role = document.getElementById('register-role').value;
+            const errorBox = document.getElementById('auth-error');
+            const successBox = document.getElementById('auth-success');
+            const btn = document.getElementById('btn-register');
+            
+            errorBox.classList.add('hidden');
+            successBox.classList.add('hidden');
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Creando...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass, role: role })
+                });
+                const data = await res.json();
+                
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Registrarme';
+                btn.disabled = false;
+
+                if (!data.success) {
+                    errorBox.innerText = data.message;
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+
+                successBox.innerText = `Cuenta creada exitosamente con rol ${role}. Ahora puedes Iniciar Sesión.`;
+                successBox.classList.remove('hidden');
+                setTimeout(() => { toggleAuth(); document.getElementById('login-email').value = email; document.getElementById('login-password').value = pass; }, 2000);
+
+            } catch (err) {
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm">person_add</span> Registrarme';
+                btn.disabled = false;
+                errorBox.innerText = "Error de conexión al servidor.";
+                errorBox.classList.remove('hidden');
+            }
+        };
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const errorBox = document.getElementById('auth-error');
+            const successBox = document.getElementById('auth-success');
+            const btn = document.getElementById('btn-login');
+            
+            errorBox.classList.add('hidden');
+            successBox.classList.add('hidden');
+            btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> Validando...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password: pass })
+                });
+                const data = await res.json();
+
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm">login</span> Entrar';
+                btn.disabled = false;
+
+                if (!data.success) {
+                    errorBox.innerText = data.message;
+                    errorBox.classList.remove('hidden');
+                    return;
+                }
+
+                // Login exitoso
+                localStorage.setItem('iqstack_token', data.data.token);
+                localStorage.setItem('iqstack_user', JSON.stringify(data.data.user));
+                const userRole = data.data.user.role;
+                document.getElementById('auth-view').classList.add('hidden');
+                
+                if (userRole === 'Admin_Global') {
+                    // MODO ADMINISTRADOR GLOBAL
+                    document.getElementById('panel-role-title').innerText = "Panel de Administrador";
+                    switchView('view-admin');
+                    
+                    // Ocultar links irrelevantes para admin y añadir de admin
+                    document.getElementById('nav-list').innerHTML = `
+                        <li><a class="nav-link active flex items-center gap-3 px-4 py-3 bg-green-50 text-primary rounded-xl font-bold cursor-pointer" data-admin-tab="clients" onclick="switchAdminTab('clients')"><span class="material-symbols-outlined">groups</span> Control Clientes</a></li>
+                        <li><a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium cursor-pointer" data-admin-tab="tickets" onclick="switchAdminTab('tickets')"><span class="material-symbols-outlined">forum</span> Todos los Tickets</a></li>
+                        <li><a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium cursor-pointer" data-admin-tab="invoices" onclick="switchAdminTab('invoices')"><span class="material-symbols-outlined">receipt_long</span> Facturación Global</a></li>
+                        <li class="mt-auto"><a class="nav-link flex items-center gap-3 px-4 py-3 text-error hover:bg-red-50 rounded-xl font-bold cursor-pointer mt-10" onclick="location.reload()"><span class="material-symbols-outlined">logout</span> Salir</a></li>
+                    `;
+                    switchAdminTab('clients');
+                    showToast('Modo Administrador activado', 'security');
+                } else {
+                    // MODO CLIENTE (PYME / ONG)
+                    document.getElementById('panel-role-title').innerText = `Panel de Cliente (${userRole})`;
+                    switchView('view-dashboard');
+                    showToast('Bienvenida de nuevo', 'waving_hand');
+                    loadClientDashboard();
+                    
+                    // Añadir botón de salir al menú
+                    document.getElementById('nav-list').innerHTML += `
+                        <li class="mt-4"><a class="nav-link flex items-center gap-3 px-4 py-3 text-error hover:bg-red-50 rounded-xl font-bold cursor-pointer" onclick="location.reload(); localStorage.clear();"><span class="material-symbols-outlined">logout</span> Salir</a></li>
+                    `;
+                }
+
+            } catch (err) {
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm">login</span> Entrar';
+                btn.disabled = false;
+                errorBox.innerText = "Error: El servidor Backend no está respondiendo.";
+                errorBox.classList.remove('hidden');
+            }
+        };
+
+        // ================= LÓGICA DE ADMINISTRACIÓN (HACER Y VER DE TODO) =================
+        const switchAdminTab = (tabName) => {
+            // Ocultar todas las sub-pestañas de administración
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`admin-tab-${tabName}`).classList.remove('hidden');
+
+            // Actualizar estado activo en la barra lateral
+            document.querySelectorAll('#nav-list .nav-link').forEach(el => {
+                el.classList.remove('active', 'bg-green-50', 'text-primary', 'font-bold');
+                el.classList.add('text-neutral', 'font-medium');
+            });
+            
+            const activeLink = document.querySelector(`#nav-list .nav-link[data-admin-tab="${tabName}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active', 'bg-green-50', 'text-primary', 'font-bold');
+                activeLink.classList.remove('text-neutral', 'font-medium');
+            }
+
+            // Cargar datos reales
+            if (tabName === 'clients') loadAdminClients();
+            if (tabName === 'tickets') loadAdminTickets();
+            if (tabName === 'invoices') loadAdminInvoices();
+        };
+
+        // --- CLIENTES ---
+        const loadAdminClients = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/clients');
+                const data = await res.json();
+                if (!data.success) return;
+
+                const tbody = document.getElementById('admin-clients-tbody');
+                tbody.innerHTML = '';
+
+                data.data.forEach(c => {
+                    const statusClass = c.is_active === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    const statusLabel = c.is_active === 1 ? 'ACTIVO' : 'SUSPENDIDO';
+                    const typeLabel = c.client_type === 'ONG' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800';
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-3">
+                                <p class="font-bold text-sm text-on-surface">${c.company_name}</p>
+                                <p class="text-xs text-neutral">${c.email}</p>
+                            </td>
+                            <td class="p-3 text-sm font-semibold text-neutral">${c.cif}</td>
+                            <td class="p-3">
+                                <p class="text-sm font-bold text-primary">${c.plan_name || 'Sin Plan'}</p>
+                                <p class="text-xs text-neutral">${c.final_price_eur ? c.final_price_eur.toFixed(2) + '€/mes' : '-'}</p>
+                            </td>
+                            <td class="p-3">
+                                <span class="px-2 py-0.5 rounded text-xs font-bold ${statusClass}">${statusLabel}</span>
+                                <span class="px-2 py-0.5 rounded text-xs font-bold ${typeLabel} ml-1">${c.client_type}</span>
+                            </td>
+                            <td class="p-3">
+                                <button onclick="toggleSuspendClient(${c.client_id})" class="p-1 text-neutral hover:text-primary transition rounded-lg hover:bg-gray-100" title="${c.is_active === 1 ? 'Suspender' : 'Activar'}">
+                                    <span class="material-symbols-outlined text-lg">${c.is_active === 1 ? 'block' : 'check_circle'}</span>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const toggleSuspendClient = async (clientId) => {
+            try {
+                const res = await fetch(`http://localhost:3000/api/admin/clients/${clientId}/suspend`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'block');
+                    loadAdminClients();
+                }
+            } catch (err) {
+                showToast('Error al suspender cliente', 'error');
+            }
+        };
+
+        // Modales Clientes
+        const openAdminClientModal = () => {
+            const m = document.getElementById('admin-client-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.classList.add('opacity-100'), 50);
+        };
+
+        const closeAdminClientModal = () => {
+            const m = document.getElementById('admin-client-modal');
+            m.classList.remove('opacity-100');
+            setTimeout(() => m.classList.add('hidden'), 300);
+        };
+
+        const submitAdminClient = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('ac-email').value;
+            const password = document.getElementById('ac-password').value;
+            const company_name = document.getElementById('ac-company').value;
+            const cif = document.getElementById('ac-cif').value;
+            const client_type = document.getElementById('ac-type').value;
+            const phone = document.getElementById('ac-phone').value;
+            const address = document.getElementById('ac-address').value;
+            const city = document.getElementById('ac-city').value;
+            const province = document.getElementById('ac-province').value;
+            const plan_id = document.getElementById('ac-plan').value;
+
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/clients', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, company_name, cif, client_type, phone, address, city, province, plan_id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Cliente creado exitosamente', 'check_circle');
+                    closeAdminClientModal();
+                    document.getElementById('form-admin-client').reset();
+                    loadAdminClients();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            } catch (err) {
+                showToast('Error al crear cliente', 'error');
+            }
+        };
+
+        // --- TICKETS ---
+        const loadAdminTickets = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/tickets');
+                const data = await res.json();
+                if (!data.success) return;
+
+                const tbody = document.getElementById('admin-tickets-tbody');
+                tbody.innerHTML = '';
+
+                data.data.forEach(t => {
+                    let priorityClass = 'bg-gray-100 text-gray-800';
+                    if (t.priority === 'HIGH') priorityClass = 'bg-orange-100 text-orange-800';
+                    if (t.priority === 'CRITICAL') priorityClass = 'bg-red-100 text-red-800';
+
+                    let statusClass = 'bg-yellow-100 text-yellow-800';
+                    if (t.status === 'RESOLVED') statusClass = 'bg-green-100 text-green-800';
+                    if (t.status === 'CLOSED') statusClass = 'bg-gray-100 text-gray-800';
+
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-3">
+                                <p class="font-bold text-sm text-on-surface">${t.company_name}</p>
+                                <p class="text-xs text-neutral">${t.client_email}</p>
+                            </td>
+                            <td class="p-3 text-sm text-on-surface font-semibold">${t.title}</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${priorityClass}">${t.priority}</span></td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${statusClass}">${t.status}</span></td>
+                            <td class="p-3 text-xs text-neutral">${new Date(t.created_at).toLocaleDateString()}</td>
+                            <td class="p-3">
+                                <button onclick="openAdminTicketReply(${t.ticket_id}, '${t.title}', '${t.company_name}')" class="bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-primary-dark transition flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">forum</span> Responder
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const openAdminTicketReply = async (ticketId, title, company) => {
+            document.getElementById('admin-reply-ticket-id').value = ticketId;
+            document.getElementById('admin-ticket-title').innerText = title;
+            document.getElementById('admin-ticket-subtitle').innerText = `Cliente: ${company}`;
+
+            await loadTicketMessages(ticketId);
+
+            const m = document.getElementById('admin-ticket-reply-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.classList.add('opacity-100'), 50);
+        };
+
+        const closeAdminTicketReplyModal = () => {
+            const m = document.getElementById('admin-ticket-reply-modal');
+            m.classList.remove('opacity-100');
+            setTimeout(() => m.classList.add('hidden'), 300);
+        };
+
+        const loadTicketMessages = async (ticketId) => {
+            try {
+                const res = await fetch(`http://localhost:3000/api/admin/tickets/${ticketId}/messages`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                const container = document.getElementById('admin-ticket-messages-container');
+                container.innerHTML = '';
+
+                data.data.forEach(msg => {
+                    const isAdmin = msg.role === 'Admin_Global' || msg.role === 'Support_Tech';
+                    const alignClass = isAdmin ? 'self-end bg-blue-50 border-blue-100' : 'self-start bg-white border-gray-100';
+                    const label = isAdmin ? 'Soporte Humano (Tú)' : 'Cliente';
+                    
+                    container.innerHTML += `
+                        <div class="p-3 rounded-lg shadow-sm w-3/4 border ${alignClass}">
+                            <p class="text-xs text-neutral mb-1 font-bold">${label} • ${new Date(msg.created_at).toLocaleTimeString()}</p>
+                            <p class="text-sm text-on-surface">${msg.message_body}</p>
+                        </div>
+                    `;
+                });
+                container.scrollTop = container.scrollHeight;
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const submitAdminTicketReply = async (e) => {
+            e.preventDefault();
+            const ticketId = document.getElementById('admin-reply-ticket-id').value;
+            const message = document.getElementById('admin-reply-message').value;
+            
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/admin/tickets/${ticketId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message_body: message, user_id: currentUser.user_id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('admin-reply-message').value = '';
+                    await loadTicketMessages(ticketId);
+                    showToast('Mensaje humano enviado correctamente', 'check_circle');
+                }
+            } catch (err) {
+                showToast('Error al enviar mensaje', 'error');
+            }
+        };
+
+        // --- FACTURAS ---
+        const loadAdminInvoices = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/invoices');
+                const data = await res.json();
+                if (!data.success) return;
+
+                const tbody = document.getElementById('admin-invoices-tbody');
+                tbody.innerHTML = '';
+
+                data.data.forEach(i => {
+                    const statusClass = i.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
+                    
+                    tbody.innerHTML += `
+                        <tr class="border-b hover:bg-gray-50 transition">
+                            <td class="p-3 text-sm font-bold text-primary">${i.invoice_number}</td>
+                            <td class="p-3 text-sm font-semibold text-on-surface">${i.company_name}</td>
+                            <td class="p-3 text-sm text-neutral">${new Date(i.issue_date).toLocaleDateString()}</td>
+                            <td class="p-3 text-sm font-semibold text-on-surface">${i.subtotal_eur.toFixed(2)}€</td>
+                            <td class="p-3 text-sm text-neutral">${i.vat_pct}% (${i.vat_amount_eur.toFixed(2)}€)</td>
+                            <td class="p-3 text-sm font-bold text-on-surface">${i.total_eur.toFixed(2)}€</td>
+                            <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${statusClass}">${i.status}</span></td>
+                        </tr>
+                    `;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const openAdminInvoiceModal = async () => {
+            try {
+                // Cargar clientes en el dropdown
+                const res = await fetch('http://localhost:3000/api/admin/clients');
+                const data = await res.json();
+                if (!data.success) return;
+
+                const select = document.getElementById('ai-client');
+                select.innerHTML = '';
+                data.data.forEach(c => {
+                    select.innerHTML += `<option value="${c.client_id}">${c.company_name} (${c.client_type})</option>`;
+                });
+
+                const m = document.getElementById('admin-invoice-modal');
+                m.classList.remove('hidden');
+                setTimeout(() => m.classList.add('opacity-100'), 50);
+            } catch (err) {
+                showToast('Error al cargar clientes para facturar', 'error');
+            }
+        };
+
+        const closeAdminInvoiceModal = () => {
+            const m = document.getElementById('admin-invoice-modal');
+            m.classList.remove('opacity-100');
+            setTimeout(() => m.classList.add('hidden'), 300);
+        };
+
+        const submitAdminInvoice = async (e) => {
+            e.preventDefault();
+            const client_id = document.getElementById('ai-client').value;
+            const description = document.getElementById('ai-description').value;
+            const amount = parseFloat(document.getElementById('ai-amount').value);
+
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/invoices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id, description, amount })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Factura emitida y registrada en SQLite', 'check_circle');
+                    closeAdminInvoiceModal();
+                    document.getElementById('form-admin-invoice').reset();
+                    loadAdminInvoices();
+                }
+            } catch (err) {
+                showToast('Error al emitir factura', 'error');
+            }
+        };
+
+        let energyChartInstance = null;
+        let ecoChartInstance = null;
+
+        // 1. GRAFICO CHART.JS
+        const initChart = (labels = ['Ene', 'Feb', 'Mar', 'Abr'], generated = [45.2, 52.8, 68.4, 74.6], consumed = [12.5, 11.2, 13.1, 12.8]) => {
+            const ctxEnergy = document.getElementById('energyChart').getContext('2d');
+            if (energyChartInstance) {
+                energyChartInstance.destroy();
+            }
+            energyChartInstance = new Chart(ctxEnergy, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Generada (kWh)',
+                            data: generated,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#27ae60',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Consumida (kWh)',
+                            data: consumed,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'transparent',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: false,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#3b82f6',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Inter', size: 12 } } },
+                        tooltip: { backgroundColor: '#1a3a4d', titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { family: 'Inter', size: 12 } } },
+                        y: { border: { display: false }, grid: { color: 'rgba(100, 116, 139, 0.1)' }, ticks: { color: '#64748b', font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+        };
+
+        // 1b. GRÁFICO DE BARRAS ENERGÍA ECO
+        const initEcoChart = (labels = ['Ene', 'Feb', 'Mar', 'Abr'], generated = [45.2, 52.8, 68.4, 74.6], consumed = [12.5, 11.2, 13.1, 12.8]) => {
+            const ctxEco = document.getElementById('ecoBarChart').getContext('2d');
+            if (ecoChartInstance) {
+                ecoChartInstance.destroy();
+            }
+            ecoChartInstance = new Chart(ctxEco, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Generada (kWh)',
+                            data: generated,
+                            backgroundColor: 'rgba(39, 174, 96, 0.6)',
+                            borderColor: '#27ae60',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Consumida (kWh)',
+                            data: consumed,
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Inter', size: 12 } } },
+                        tooltip: { backgroundColor: '#1a3a4d', titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(100, 116, 139, 0.1)' },
+                            ticks: { color: '#64748b', font: { family: 'Inter', size: 12 } }
+                        }
+                    }
+                }
+            });
+        };
+
+        // 2. SISTEMA DE VISTAS (Navegación SPA)
+        const switchView = (targetId) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(targetId) || document.getElementById('view-placeholder');
+            target.classList.remove('hidden');
+            
+            // Actualizar estado activo en Sidebar Desktop
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-green-50', 'text-primary', 'font-bold');
+                link.classList.add('text-neutral', 'font-medium');
+                if(link.dataset.target === targetId) {
+                    link.classList.remove('text-neutral', 'font-medium');
+                    link.classList.add('bg-green-50', 'text-primary', 'font-bold');
+                }
+            });
+        };
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('.nav-link, .nav-link-mobile');
+            if (link) {
+                const targetId = link.dataset.target;
+                if (targetId) {
+                    switchView(targetId);
+                }
+            }
+        });
+
+        // 3. TOAST NOTIFICATIONS
+        let toastTimeout;
+        const showToast = (message, icon = 'check_circle', isError = false) => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            
+            const iconEl = document.getElementById('toast-icon');
+            iconEl.innerText = icon;
+            iconEl.className = `material-symbols-outlined ${isError ? 'text-error' : 'text-primary'}`;
+            
+            toast.style.bottom = '30px';
+            toast.style.opacity = '1';
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.style.bottom = '-100px';
+                toast.style.opacity = '0';
+            }, 3000);
+        };
+
+        // 4. MÓDULO DE FACTURAS
+        const descargarFactura = () => {
+            showToast('Generando PDF seguro con sello digital...', 'hourglass_empty');
+            
+            setTimeout(() => {
+                // Generar Blob PDF Dummy
+                const dummyContent = "Contenido de la factura INV-2026-0001 - IQ STACK\nCliente: Panaderia Lopez SL\nTotal: 12.09 EUR";
+                const blob = new Blob([dummyContent], { type: "application/pdf" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "Factura_INV-2026-0001_IQSTACK.pdf";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showToast('Factura INV-2026-0001 descargada con éxito', 'download_done');
+            }, 1500);
+        };
+
+        // 5. MODAL TICKET
+        const modal = document.getElementById('ticket-modal');
+        const modalContent = document.getElementById('ticket-modal-content');
+
+        const openTicketModal = () => {
+            modal.classList.remove('hidden');
+            // Trigger reflow
+            void modal.offsetWidth; 
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        };
+
+        const closeTicketModal = () => {
+            modal.classList.add('opacity-0');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        };
+
+        // ================= CLIENT BACKEND INTEGRATION LAYER =================
+        const submitTicket = async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('ticket-title').value;
+            const description = document.getElementById('ticket-desc').value;
+            const priority = document.getElementById('ticket-priority').value;
+
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            closeTicketModal();
+            showToast('Creando ticket ecológico en SQLite...', 'sync');
+
+            try {
+                const res = await fetch('http://localhost:3000/api/client/tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser.user_id, title, description, priority })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Ticket registrado correctamente', 'check_circle');
+                    document.getElementById('form-ticket').reset();
+                    loadClientTickets();
+                } else {
+                    showToast(data.message, 'error', true);
+                }
+            } catch (err) {
+                showToast('Error al enviar ticket al servidor', 'error', true);
+            }
+        };
+
+        const loadClientDashboard = async () => {
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/client/dashboard?userId=${currentUser.user_id}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                // 1. Bienvenida y Datos de Cabecera
+                const welcomeTitle = document.getElementById('header-client-welcome');
+                const welcomeSubtext = document.getElementById('header-client-company');
+                
+                welcomeTitle.innerText = `¡Hola de nuevo, ${data.data.client.company_name}!`;
+                welcomeSubtext.innerText = `${data.data.client.company_name} • Panel de control ecológico de IQ STACK.`;
+                
+                // 2. Plan Actual Sidebar
+                const planName = data.data.plan ? data.data.plan.plan_name : 'Sin Plan Activo';
+                document.getElementById('sidebar-plan-name').innerText = `${planName} (${data.data.client.client_type})`;
+
+                // 3. Resaltar plan en la pestaña "Mis Planes"
+                document.querySelectorAll('.tilt-card__inner').forEach(card => {
+                    const cardTitleElement = card.querySelector('h3');
+                    if (!cardTitleElement) return;
+                    const cardTitle = cardTitleElement.innerText.trim();
+                    const actionBtn = card.querySelector('button');
+                    
+                    if (planName.toLowerCase().includes(cardTitle.toLowerCase())) {
+                        card.style.border = '2px solid #27ae60';
+                        card.style.boxShadow = '0 10px 25px -5px rgba(39, 174, 96, 0.2)';
+                        actionBtn.innerText = 'Tu Plan Activo';
+                        actionBtn.disabled = true;
+                        actionBtn.className = 'w-full py-3 rounded-lg bg-green-500 text-white font-bold transition mt-auto cursor-default';
+                    } else {
+                        card.style.border = '';
+                        card.style.boxShadow = '';
+                        actionBtn.disabled = false;
+                        if (actionBtn.classList.contains('bg-primary') || actionBtn.classList.contains('text-white')) {
+                            actionBtn.className = 'w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark transition mt-auto';
+                            actionBtn.innerText = 'Contratar';
+                        } else {
+                            actionBtn.className = 'w-full py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition mt-auto';
+                            actionBtn.innerText = 'Contratar';
+                        }
+                    }
+                });
+
+                // 4. Métricas Circulares del Mes Actual (Último mes disponible en SQLite)
+                if (data.data.metrics.length > 0) {
+                    const latestMonth = data.data.metrics[data.data.metrics.length - 1];
+                    document.getElementById('val-gen').innerText = latestMonth.kwh_generated.toFixed(1);
+                    document.getElementById('val-con').innerText = latestMonth.kwh_consumed.toFixed(1);
+
+                    // Mapear offsets de círculos (Max 100 kWh de referencia)
+                    const genOffset = 251.2 * (1 - Math.min(latestMonth.kwh_generated / 100, 1));
+                    const conOffset = 251.2 * (1 - Math.min(latestMonth.kwh_consumed / 100, 1));
+                    document.getElementById('circle-gen').style.strokeDashoffset = genOffset;
+                    document.getElementById('circle-con').style.strokeDashoffset = conOffset;
+                }
+
+                // 5. Impacto Ecológico y Equivalencia
+                const co2Saved = data.data.totals.total_co2_saved || 0;
+                document.getElementById('dash-co2-val').innerText = co2Saved.toFixed(1);
+                const trees = Math.round(co2Saved / 22); // Un árbol absorbe aprox 22 kg de CO2 al año
+                document.getElementById('dash-trees-val').innerHTML = `Equivalente a plantar <span class="font-bold text-primary">${trees} árboles</span>.`;
+
+                // 6. Cargar Gráficos Dinámicos desde SQLite
+                if (data.data.metrics.length > 0) {
+                    const labels = data.data.metrics.map(m => m.metric_month.substring(0, 3));
+                    const genData = data.data.metrics.map(m => m.kwh_generated);
+                    const conData = data.data.metrics.map(m => m.kwh_consumed);
+
+                    initChart(labels, genData, conData);
+                    initEcoChart(labels, genData, conData);
+
+                    // Cargar tabla historial mensual de la pestaña ecológica
+                    const ecoTbody = document.getElementById('client-eco-tbody');
+                    ecoTbody.innerHTML = '';
+                    data.data.metrics.forEach(m => {
+                        ecoTbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 border-b">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">${m.metric_month}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.kwh_generated.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${m.kwh_consumed.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-primary font-semibold">${m.kwh_saved.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${m.co2_saved_kg.toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold">${m.renewable_pct}%</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // 7. Cargar Facturas y Tickets
+                loadClientInvoices();
+                loadClientTickets();
+
+            } catch (err) {
+                console.error('Error al cargar dashboard del cliente:', err);
+            }
+        };
+
+        const loadClientInvoices = async () => {
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/client/invoices?userId=${currentUser.user_id}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                // 1. Llenar tabla en pestaña Facturas
+                const tbody = document.getElementById('client-invoices-tbody');
+                tbody.innerHTML = '';
+
+                if (data.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-neutral">No se encontraron facturas registradas.</td></tr>`;
+                }
+
+                data.data.forEach(i => {
+                    const statusClass = i.status === 'PAID' ? 'text-green-600 font-bold' : 'text-yellow-600 font-bold';
+                    const statusLabel = i.status === 'PAID' ? 'PAGADA' : 'PENDIENTE';
+                    const formattedDate = new Date(i.issue_date).toLocaleDateString();
+                    const formattedDue = new Date(i.due_date).toLocaleDateString();
+                    const concept = `Plan hosting contratado — Emisión de factura periódica.`;
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50 border-b">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${i.invoice_number}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDue}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${concept}">${concept}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${i.subtotal_eur.toFixed(2)}€</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${i.vat_pct}%</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${i.vat_amount_eur.toFixed(2)}€</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${i.total_eur.toFixed(2)}€</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm ${statusClass}">${statusLabel}</td>
+                        </tr>
+                    `;
+                });
+
+                // 2. Actualizar tarjeta de Última Factura en el Dashboard
+                const dashInvoiceContainer = document.getElementById('dash-invoice-container');
+                if (data.data.length > 0) {
+                    const lastInvoice = data.data[0];
+                    const formattedDate = new Date(lastInvoice.issue_date).toLocaleDateString();
+                    const statusClass = lastInvoice.status === 'PAID' ? 'text-primary bg-green-50' : 'text-orange-600 bg-orange-50';
+                    const statusLabel = lastInvoice.status === 'PAID' ? 'PAGADA' : 'PENDIENTE';
+
+                    dashInvoiceContainer.innerHTML = `
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
+                            <div>
+                                <p class="font-bold text-on-surface">${lastInvoice.invoice_number}</p>
+                                <p class="text-xs text-neutral">Emitida: ${formattedDate}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-on-surface">${lastInvoice.total_eur.toFixed(2)}€</p>
+                                <span class="text-xs font-bold px-2 py-1 rounded ${statusClass}">${statusLabel}</span>
+                            </div>
+                        </div>
+                        <button onclick="descargarUltimaFacturaPDF('${lastInvoice.invoice_number}', ${lastInvoice.total_eur})" class="w-full text-center text-sm font-semibold text-on-surface border border-gray-200 rounded-lg py-2 hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            Descargar PDF
+                        </button>
+                    `;
+                } else {
+                    dashInvoiceContainer.innerHTML = `<p class="text-center text-sm text-neutral py-6">No hay facturas vigentes.</p>`;
+                }
+
+            } catch (err) {
+                console.error('Error al cargar facturas de cliente:', err);
+            }
+        };
+
+        const descargarUltimaFacturaPDF = (invNumber, total) => {
+            showToast(`Generando copia digital de ${invNumber}...`, 'hourglass_empty');
+            
+            // Descarga instantánea e interacción de usuario síncrona
+            const dummyContent = `IQ STACK ECOLOGICAL CLOUD SERVICES SL\nFactura: ${invNumber}\nTotal: ${total.toFixed(2)} EUR\nSello Digital: Firmado electrónicamente mediante algoritmo SHA256 con fecha del día.`;
+            const blob = new Blob([dummyContent], { type: "application/pdf" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Factura_${invNumber}_IQSTACK.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(`Factura ${invNumber} descargada exitosamente`, 'download_done');
+        };
+
+        const loadClientTickets = async () => {
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/client/tickets?userId=${currentUser.user_id}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                const ticketsContainer = document.getElementById('client-tickets-container');
+                ticketsContainer.innerHTML = '';
+
+                // Separar en curso (OPEN, IN_PROGRESS) y resueltos (RESOLVED, CLOSED)
+                const activeTickets = data.data.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS');
+                const resolvedTickets = data.data.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED');
+
+                // 1. Mostrar ticket activo destacado si existe
+                if (activeTickets.length > 0) {
+                    const t = activeTickets[0];
+                    const priorityClass = t.priority === 'HIGH' || t.priority === 'CRITICAL' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800';
+                    const techName = t.tech_email ? t.tech_email.split('@')[0] : 'Soporte IQ STACK';
+                    const formattedDate = new Date(t.created_at).toLocaleDateString() + ' ' + new Date(t.created_at).toLocaleTimeString();
+
+                    ticketsContainer.innerHTML += `
+                        <div class="bg-white rounded-2xl p-6 soft-shadow border border-gray-100 hover-lift cursor-pointer animate-pulse-subtle" onclick="openClientTicketReply(${t.ticket_id}, '${t.title}', '${t.tech_email || 'Soporte'}')">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="font-bold text-lg text-on-surface">Ticket en Curso</h3>
+                                <span class="material-symbols-outlined text-primary animate-pulse">forum</span>
+                            </div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-bold ${priorityClass} px-2 py-1 rounded">${t.status} • ${t.priority}</span>
+                                <span class="text-xs text-neutral">${formattedDate}</span>
+                            </div>
+                            <h4 class="font-semibold text-on-surface text-sm mb-1 line-clamp-2">${t.title}</h4>
+                            <p class="text-xs text-neutral mb-3">Técnico asignado: <span class="font-semibold text-on-surface text-capitalize">${techName}</span></p>
+                            <span class="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                                Abrir chat humano <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    ticketsContainer.innerHTML += `
+                        <div class="bg-white rounded-2xl p-6 soft-shadow border border-dashed border-gray-200 text-center py-8">
+                            <span class="material-symbols-outlined text-4xl text-neutral mb-2">check_circle</span>
+                            <p class="font-bold text-sm text-neutral">No tienes ningún ticket de soporte abierto en este momento.</p>
+                            <p class="text-xs text-neutral">¿Necesitas ayuda humana con tu servidor? Haz clic en Nuevo Ticket.</p>
+                        </div>
+                    `;
+                }
+
+                // 2. Mostrar listado historial
+                let historyHtml = `
+                    <div class="border-t pt-4">
+                        <h3 class="font-bold text-lg text-on-surface mb-4">Historial de Tickets</h3>
+                        <div class="space-y-4">
+                `;
+
+                if (resolvedTickets.length === 0) {
+                    historyHtml += `<p class="text-xs text-neutral py-2 text-center">No hay tickets anteriores en el historial.</p>`;
+                } else {
+                    resolvedTickets.forEach(t => {
+                        const statusClass = t.status === 'RESOLVED' ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800';
+                        const techName = t.tech_email ? t.tech_email.split('@')[0] : 'Soporte';
+                        const formattedDate = new Date(t.created_at).toLocaleDateString();
+
+                        historyHtml += `
+                            <div class="bg-gray-50 rounded-xl p-4 cursor-pointer hover:bg-gray-100 transition" onclick="openClientTicketReply(${t.ticket_id}, '${t.title}', '${t.tech_email || 'Soporte'}')">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-semibold text-on-surface text-sm">${t.title}</h4>
+                                    <p class="text-xs text-neutral">${formattedDate}</p>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold ${statusClass} px-2 py-1 rounded">${t.status}</span>
+                                    <span class="text-xs text-neutral">Técnico: <span class="font-semibold text-capitalize">${techName}</span></span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                historyHtml += `
+                        </div>
+                    </div>
+                `;
+                ticketsContainer.innerHTML += historyHtml;
+
+                // 3. Actualizar tarjeta Soporte Técnico en el Dashboard
+                const dashTicketContainer = document.getElementById('ticket-container');
+                if (data.data.length > 0) {
+                    const newest = data.data[0];
+                    const statusClass = newest.status === 'OPEN' || newest.status === 'IN_PROGRESS' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800';
+                    const techName = newest.tech_email ? newest.tech_email.split('@')[0] : 'Asignando...';
+                    const formattedDate = new Date(newest.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    dashTicketContainer.onclick = () => openClientTicketReply(newest.ticket_id, newest.title, newest.tech_email || 'Soporte');
+                    dashTicketContainer.className = "bg-blue-50 border border-blue-100 rounded-xl p-4 mb-auto hover:bg-blue-100 transition cursor-pointer";
+                    dashTicketContainer.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold ${statusClass} px-2 py-1 rounded">${newest.status}</span>
+                            <span class="text-xs text-neutral">Hoy ${formattedDate}</span>
+                        </div>
+                        <h4 class="font-semibold text-on-surface text-sm mb-1 line-clamp-2">${newest.title}</h4>
+                        <p class="text-xs text-neutral mb-3">Técnico: <span class="font-semibold text-on-surface text-capitalize">${techName}</span></p>
+                        <span class="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                            Ver chat <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                        </span>
+                    `;
+                } else {
+                    dashTicketContainer.onclick = openTicketModal;
+                    dashTicketContainer.className = "bg-green-50 border border-green-100 rounded-xl p-4 mb-auto hover:bg-green-100 transition cursor-pointer";
+                    dashTicketContainer.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold bg-green-200 text-green-800 px-2 py-1 rounded">TODO OK</span>
+                        </div>
+                        <h4 class="font-semibold text-on-surface text-sm mb-1">Sin incidencias abiertas</h4>
+                        <p class="text-xs text-neutral mb-3">Tu servidor web funciona a pleno rendimiento solar.</p>
+                        <span class="text-sm font-semibold text-primary flex items-center gap-1">
+                            Nuevo ticket <span class="material-symbols-outlined text-sm">add_circle</span>
+                        </span>
+                    `;
+                }
+
+            } catch (err) {
+                console.error('Error al cargar tickets de soporte del cliente:', err);
+            }
+        };
+
+        const openClientTicketReply = async (ticketId, title, techEmail) => {
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            document.getElementById('client-reply-ticket-id').value = ticketId;
+            document.getElementById('client-ticket-title').innerText = title;
+            document.getElementById('client-ticket-subtitle').innerText = `Técnico: ${techEmail || 'Asignando a equipo humano'}`;
+
+            await loadClientTicketMessages(ticketId);
+
+            const modal = document.getElementById('client-ticket-reply-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.add('opacity-100'), 50);
+        };
+
+        const closeClientTicketReplyModal = () => {
+            const modal = document.getElementById('client-ticket-reply-modal');
+            modal.classList.remove('opacity-100');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        const loadClientTicketMessages = async (ticketId) => {
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+            if (!currentUser) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/client/tickets/${ticketId}/messages?userId=${currentUser.user_id}`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                const container = document.getElementById('client-ticket-messages-container');
+                container.innerHTML = '';
+
+                data.data.forEach(msg => {
+                    const isAdmin = msg.role === 'Admin_Global' || msg.role === 'Support_Tech';
+                    const alignClass = isAdmin ? 'self-start bg-white border-gray-100' : 'self-end bg-blue-50 border-blue-100';
+                    const label = isAdmin ? `Soporte Humano (${msg.email.split('@')[0]})` : 'Tú (Cliente)';
+
+                    container.innerHTML += `
+                        <div class="p-3 rounded-lg shadow-sm w-3/4 border flex flex-col ${alignClass}">
+                            <p class="text-xs text-neutral mb-1 font-bold text-capitalize">${label} • ${new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p class="text-sm text-on-surface">${msg.message_body}</p>
+                        </div>
+                    `;
+                });
+                container.scrollTop = container.scrollHeight;
+
+            } catch (err) {
+                console.error('Error al cargar mensajes del ticket:', err);
+            }
+        };
+
+        const submitClientTicketReply = async (e) => {
+            e.preventDefault();
+            const ticketId = document.getElementById('client-reply-ticket-id').value;
+            const message = document.getElementById('client-reply-message').value;
+            const currentUser = JSON.parse(localStorage.getItem('iqstack_user'));
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/client/tickets/${ticketId}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUser.user_id, message_body: message })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('client-reply-message').value = '';
+                    await loadClientTicketMessages(ticketId);
+                    loadClientTickets(); // Refrescar estado y orden de tickets en la pestaña soporte
+                    showToast('Mensaje de soporte enviado', 'check_circle');
+                }
+            } catch (err) {
+                showToast('Error al enviar mensaje', 'error', true);
+            }
+        };
+
+        // 6. MOBILE MENU TOGGLE
+        const toggleMobileMenu = () => {
+            const menu = document.getElementById('mobile-menu');
+            const overlay = document.getElementById('mobile-menu-overlay');
+            
+            if(menu.classList.contains('translate-x-full')) {
+                menu.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                menu.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        };
+
+        // 7. SIMULACIÓN REAL-TIME (Batería y Energía)
+        const simulateRealTime = () => {
+            // Animar batería ligeramente para dar sensación de carga
+            let batPercent = 85;
+            setInterval(() => {
+                batPercent = batPercent === 85 ? 86 : 85;
+                const batVal = document.getElementById('battery-val');
+                if (batVal) batVal.innerText = batPercent + '%';
+                
+                const bat4 = document.getElementById('bat-4');
+                if (bat4) {
+                    if(batPercent === 86) {
+                        bat4.classList.replace('bg-gray-200', 'bg-primary');
+                        bat4.classList.add('opacity-30');
+                    } else {
+                        bat4.classList.replace('bg-primary', 'bg-gray-200');
+                        bat4.classList.remove('opacity-30');
+                    }
+                }
+            }, 3000);
+
+            // Animar generación kWh simulando picos solares
+            let baseGen = 74.6;
+            setInterval(() => {
+                const fluct = (Math.random() * 0.2 - 0.1).toFixed(2);
+                const newVal = (baseGen + parseFloat(fluct)).toFixed(1);
+                const valGen = document.getElementById('val-gen');
+                if (valGen) valGen.innerText = newVal;
+                
+                // Mover un poco el dashoffset del círculo
+                const circle = document.getElementById('circle-gen');
+                if (circle) {
+                    const offset = 30 + (Math.random() * 10 - 5);
+                    circle.style.strokeDashoffset = offset;
+                }
+            }, 4000);
+        };
+
+        // INICIALIZACIÓN Y PERSISTENCIA DE SESIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedUser = localStorage.getItem('iqstack_user');
+            if (storedUser) {
+                const user = JSON.parse(storedUser);
+                document.getElementById('auth-view').classList.add('hidden');
+                
+                if (user.role === 'Admin_Global') {
+                    // MODO ADMINISTRADOR GLOBAL
+                    document.getElementById('panel-role-title').innerText = "Panel de Administrador";
+                    document.getElementById('nav-list').innerHTML = `
+                        <li><a class="nav-link active flex items-center gap-3 px-4 py-3 bg-green-50 text-primary rounded-xl font-bold cursor-pointer" data-admin-tab="clients" onclick="switchAdminTab('clients')"><span class="material-symbols-outlined">groups</span> Control Clientes</a></li>
+                        <li><a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium cursor-pointer" data-admin-tab="tickets" onclick="switchAdminTab('tickets')"><span class="material-symbols-outlined">forum</span> Todos los Tickets</a></li>
+                        <li><a class="nav-link flex items-center gap-3 px-4 py-3 text-neutral hover:bg-gray-50 rounded-xl font-medium cursor-pointer" data-admin-tab="invoices" onclick="switchAdminTab('invoices')"><span class="material-symbols-outlined">receipt_long</span> Facturación Global</a></li>
+                        <li class="mt-auto"><a class="nav-link flex items-center gap-3 px-4 py-3 text-error hover:bg-red-50 rounded-xl font-bold cursor-pointer mt-10" onclick="location.reload(); localStorage.clear();"><span class="material-symbols-outlined">logout</span> Salir</a></li>
+                    `;
+                    switchView('view-admin');
+                    switchAdminTab('clients');
+                    showToast('Bienvenido Administrador', 'security');
+                } else {
+                    // MODO CLIENTE (PYME / ONG)
+                    document.getElementById('panel-role-title').innerText = `Panel de Cliente (${user.role})`;
+                    document.getElementById('nav-list').innerHTML += `
+                        <li class="mt-4"><a class="nav-link flex items-center gap-3 px-4 py-3 text-error hover:bg-red-50 rounded-xl font-bold cursor-pointer" onclick="location.reload(); localStorage.clear();"><span class="material-symbols-outlined">logout</span> Salir</a></li>
+                    `;
+                    switchView('view-dashboard');
+                    loadClientDashboard();
+                }
+            } else {
+                // Fallback demo/inicialización
+                initChart();
+                initEcoChart();
+            }
+            simulateRealTime();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="es" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQ STACK - Hosting Ecológico</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config based on DESIGN.md -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#27ae60",
+                        "primary-dark": "#006d37",
+                        "surface": "#f0fdf4",
+                        "on-surface": "#1a3a4d",
+                        "neutral": "#64748b",
+                        "accent-blue": "#00d4ff",
+                        "accent-yellow": "#ffd700"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9ff;
+            color: #1a3a4d;
+            overflow-x: hidden;
+        }
+
+        /* ==========================================================================
+           SKILL 1: EFECTO TYPEWRITER
+           ========================================================================== */
+        .typewriter-container {
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: #1a3a4d;
+            min-height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .typewriter-cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.1em;
+            background-color: #27ae60;
+            margin-left: 6px;
+            animation: blinkCursor 0.8s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blinkCursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* ==========================================================================
+           SKILL 2: TILT 3D CARDS
+           ========================================================================== */
+        .tilt-card {
+            position: relative;
+            perspective: 1200px;
+            width: 100%;
+            cursor: crosshair;
+            height: 100%;
+        }
+
+        .tilt-card__inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(26, 58, 77, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), 
+                        box-shadow 0.6s ease, 
+                        border-color 0.6s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tilt-card__inner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(
+                circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+                rgba(39, 174, 96, 0.15) 0%, 
+                transparent 60%
+            );
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .tilt-card__inner.is-hovered::before {
+            opacity: 1;
+        }
+
+        .tilt-card__content {
+            position: relative;
+            z-index: 1;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ==========================================================================
+           SKILL 3: 3D INTERACTIVE CUBE
+           ========================================================================== */
+        .mistereia-core {
+            width: 200px;
+            height: 200px;
+            margin: 3rem auto;
+            perspective: 800px;
+        }
+
+        .cube-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotateCube 20s infinite linear;
+        }
+
+        .cube-3d div {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #27ae60;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            backface-visibility: visible;
+            border-radius: 12px;
+            color: #1a3a4d;
+        }
+
+        /* Translación Z = 100px (mitad de 200px) */
+        .cube-3d .front  { transform: translateZ(100px); }
+        .cube-3d .back   { transform: rotateY(180deg) translateZ(100px); border-color: #00d4ff; box-shadow: 0 0 20px rgba(0, 212, 255, 0.2); }
+        .cube-3d .right  { transform: rotateY(90deg) translateZ(100px); }
+        .cube-3d .left   { transform: rotateY(-90deg) translateZ(100px); border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2); }
+        .cube-3d .top    { transform: rotateX(90deg) translateZ(100px); }
+        .cube-3d .bottom { transform: rotateX(-90deg) translateZ(100px); }
+
+        @keyframes rotateCube {
+            from { transform: rotateX(0) rotateY(0); }
+            to   { transform: rotateX(360deg) rotateY(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- NAV BAR -->
+    <nav class="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-primary flex items-center gap-2">
+                        <span class="material-symbols-outlined text-3xl">eco</span>
+                        IQ STACK
+                    </span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#inicio" class="text-on-surface hover:text-primary font-medium">Inicio</a>
+                    <a href="#servicios" class="text-on-surface hover:text-primary font-medium">Servicios</a>
+                    <a href="#tecnologia" class="text-on-surface hover:text-primary font-medium">Tecnología Verde</a>
+                    <a href="code.html" class="bg-primary text-white px-6 py-2 rounded-full font-medium hover:bg-primary-dark transition shadow-lg">Panel Cliente</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION (Typewriter Skill) -->
+    <section id="inicio" class="pt-24 pb-16 px-4 max-w-7xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-primary font-semibold text-sm mb-6">
+            <span class="material-symbols-outlined text-sm">solar_power</span>
+            Hosting 100% Energía Renovable
+        </div>
+        <h1 class="text-5xl md:text-7xl font-bold text-on-surface mb-6 tracking-tight">
+            Tecnología que funciona,<br>
+            <span class="text-primary">valores que importan.</span>
+        </h1>
+        
+        <div class="statements-section my-12">
+            <div class="container mx-auto">
+                <div class="statements-content text-center">
+                    <span class="text-neutral font-semibold uppercase tracking-widest text-sm block mb-4">Lo que nos define</span>
+                    <h2 id="typewriterText" class="typewriter-container"></h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10">
+            <a href="#servicios" class="bg-primary text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-primary-dark transition shadow-xl hover:-translate-y-1 transform">
+                Ver Planes
+            </a>
+            <a href="code.html" class="bg-white text-on-surface border border-gray-300 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-50 transition shadow-sm hover:-translate-y-1 transform">
+                Ver Dashboard Demo
+            </a>
+        </div>
+    </section>
+
+    <!-- SERVICIOS (Tilt 3D Cards Skill) -->
+    <section id="servicios" class="py-24 bg-surface px-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-on-surface mb-4">Planes diseñados para ti</h2>
+                <p class="text-xl text-neutral max-w-2xl mx-auto">Soporte 100% humano. Cero bots. Si eres una ONG, tienes un 20% de descuento directo.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Card 1: Standard -->
+                <div class="tilt-card h-full">
+                    <div class="tilt-card__inner">
+                        <div class="tilt-card__content">
+                            <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                <span class="material-symbols-outlined text-3xl">storefront</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">Standard</h3>
+                            <p class="text-neutral mb-6 flex-grow">Para webs corporativas y tiendas pequeñas. Todo lo esencial.</p>
+                            <div class="mb-6">
+                                <span class="text-4xl font-bold">9.99€</span><span class="text-neutral">/mes</span>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 50 GB Almacenamiento</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Certificado SSL Incluido</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Copias de seguridad semanales</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Eco-Dashboard</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition mt-auto">Contratar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Premium -->
+                <div class="tilt-card h-full">
+                    <div class="tilt-card__inner border-primary shadow-lg" style="border-width: 2px;">
+                        <div class="tilt-card__content">
+                            <div class="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">POPULAR</div>
+                            <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">Premium</h3>
+                            <p class="text-neutral mb-6 flex-grow">Para e-commerce y aplicaciones web de alto tráfico.</p>
+                            <div class="mb-6">
+                                <span class="text-4xl font-bold">24.99€</span><span class="text-neutral">/mes</span>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 200 GB Almacenamiento</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Recursos Dedicados</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Copias de seguridad diarias</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Soporte Prioritario Humano</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary-dark transition mt-auto">Contratar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Assisted -->
+                <div class="tilt-card h-full">
+                    <div class="tilt-card__inner">
+                        <div class="tilt-card__content">
+                            <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-primary mb-6">
+                                <span class="material-symbols-outlined text-3xl">support_agent</span>
+                            </div>
+                            <h3 class="text-2xl font-bold mb-2">Assisted</h3>
+                            <p class="text-neutral mb-6 flex-grow">Servicio totalmente gestionado para clientes sin equipo técnico.</p>
+                            <div class="mb-6">
+                                <span class="text-4xl font-bold">49.99€</span><span class="text-neutral">/mes</span>
+                            </div>
+                            <ul class="space-y-3 mb-8">
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> 500 GB Almacenamiento</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Migración y Mantenimiento</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Actualizaciones del sistema</li>
+                                <li class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">check_circle</span> Soporte telefónico ilimitado</li>
+                            </ul>
+                            <button class="w-full py-3 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition mt-auto">Contratar</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- TECNOLOGIA (Interactive 3D Cube Skill) -->
+    <section id="tecnologia" class="py-24 px-4 bg-white overflow-hidden">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
+            <div class="w-full lg:w-1/2">
+                <h2 class="text-4xl font-bold text-on-surface mb-6">Infraestructura 100% Verde</h2>
+                <p class="text-lg text-neutral mb-6">
+                    Internet contamina tanto como la industria de la aviación. En IQ STACK hemos construido un Centro de Datos sostenible:
+                </p>
+                <ul class="space-y-4 mb-8">
+                    <li class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 shrink-0">
+                            <span class="material-symbols-outlined">solar_power</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-on-surface">Energía Solar Propia</h4>
+                            <p class="text-neutral">Flujo: Sol ➝ Placas ➝ Baterías ➝ Servidores.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                            <span class="material-symbols-outlined">recycling</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-on-surface">Economía Circular</h4>
+                            <p class="text-neutral">Utilizamos servidores reacondicionados de alto rendimiento y bajo consumo.</p>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-primary shrink-0">
+                            <span class="material-symbols-outlined">terminal</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-on-surface">Open Source</h4>
+                            <p class="text-neutral">Pila tecnológica basada en Linux y optimización extrema de cachés.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="w-full lg:w-1/2 flex justify-center">
+                <!-- Contenedor interactivo del Cubo 3D -->
+                <div class="mistereia-core">
+                  <div class="cube-3d">
+                    <div class="front"><span class="material-symbols-outlined text-yellow-500" style="font-size: 80px;">solar_power</span></div>
+                    <div class="back"><span class="material-symbols-outlined text-blue-500" style="font-size: 80px;">terminal</span></div>
+                    <div class="right"><span class="material-symbols-outlined text-green-500" style="font-size: 80px;">recycling</span></div>
+                    <div class="left"><span class="material-symbols-outlined text-purple-500" style="font-size: 80px;">security</span></div>
+                    <div class="top"><span class="material-symbols-outlined text-red-500" style="font-size: 80px;">bolt</span></div>
+                    <div class="bottom"><span class="material-symbols-outlined text-teal-500" style="font-size: 80px;">public</span></div>
+                  </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-on-surface text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="flex items-center justify-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary text-3xl">eco</span>
+                <span class="text-2xl font-bold">IQ STACK</span>
+            </div>
+            <p class="text-gray-400 mb-8">Benicarló, Castellón. Democratizando la tecnología sin dañar el planeta.</p>
+            <p class="text-gray-500 text-sm">© 2026 IQ STACK. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS DE LAS SKILLS -->
+    <script>
+        // SKILL 1: TYPEWRITER ENGINE
+        function initTypewriter(elementId, customPhrases) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+
+            const phrases = customPhrases || [
+                'Hosting Ecológico y Soluciones Sostenibles.',
+                'Democratizamos la tecnología sin dañar el planeta.',
+                'Soporte 100% humano. Cero bots.',
+                'Energía 100% Renovable. Tecnología que funciona.'
+            ];
+
+            let phraseIndex = 0;
+            let charIndex = 0;
+            let isDeleting = false;
+            let cursorEl = container.querySelector('.typewriter-cursor');
+
+            function tick() {
+                const currentPhrase = phrases[phraseIndex];
+                const displayed = currentPhrase.substring(0, charIndex);
+
+                if (cursorEl) cursorEl.remove();
+
+                const textNode = document.createTextNode('"' + displayed + '"');
+                container.innerHTML = '';
+                container.appendChild(textNode);
+                
+                if (!cursorEl) {
+                    cursorEl = document.createElement('span');
+                    cursorEl.className = 'typewriter-cursor';
+                }
+                container.appendChild(cursorEl);
+
+                if (!isDeleting) {
+                    if (charIndex < currentPhrase.length) {
+                        charIndex++;
+                        setTimeout(tick, 30 + Math.random() * 20);
+                    } else {
+                        setTimeout(() => { isDeleting = true; tick(); }, 1800);
+                    }
+                } else {
+                    if (charIndex > 0) {
+                        charIndex--;
+                        setTimeout(tick, 10);
+                    } else {
+                        isDeleting = false;
+                        phraseIndex = (phraseIndex + 1) % phrases.length;
+                        setTimeout(tick, 300);
+                    }
+                }
+            }
+            tick();
+        }
+
+        // SKILL 2: TILT 3D CARDS ENGINE
+        function initTiltCards() {
+            const cards = document.querySelectorAll('.tilt-card');
+            
+            cards.forEach((card) => {
+                const inner = card.querySelector('.tilt-card__inner');
+                if (!inner) return;
+
+                card.addEventListener('mouseenter', () => {
+                    inner.classList.add('is-hovered');
+                });
+
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const mouseRelX = e.clientX - rect.left;
+                    const mouseRelY = e.clientY - rect.top;
+                    
+                    const x = (mouseRelX / rect.width) - 0.5;
+                    const y = (mouseRelY / rect.height) - 0.5;
+
+                    const tiltX = 15; 
+                    const tiltY = 15;
+                    const depth = 20; 
+                    const scale = 1.02; 
+
+                    inner.style.transform = `perspective(1200px) rotateY(${x * tiltX}deg) rotateX(${y * -tiltY}deg) translateZ(${depth}px) scale(${scale})`;
+                    inner.style.transition = 'transform 0.08s linear, box-shadow 0.08s linear, border-color 0.2s ease';
+
+                    const shadowX = -x * 20;
+                    const shadowY = y * 20;
+                    
+                    // Sombra verde corporativa
+                    inner.style.boxShadow = `${shadowX}px ${shadowY}px 30px rgba(0,0,0,0.1), 0 0 20px rgba(39, 174, 96, 0.1)`;
+                    
+                    card.style.setProperty('--mouse-x', `${(mouseRelX / rect.width) * 100}%`);
+                    card.style.setProperty('--mouse-y', `${(mouseRelY / rect.height) * 100}%`);
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    inner.classList.remove('is-hovered');
+                    inner.style.transform = '';
+                    inner.style.boxShadow = '';
+                    inner.style.transition = 'transform 0.6s cubic-bezier(0.19,1,0.22,1), box-shadow 0.6s ease, border-color 0.6s ease';
+                });
+            });
+        }
+
+        // SKILL 3: 3D INTERACTIVE CUBE ENGINE
+        function initInteractiveCube() {
+            const cube = document.querySelector('.cube-3d');
+            const container = document.querySelector('.mistereia-core');
+
+            if (container && cube) {
+                container.addEventListener('mousemove', (e) => {
+                    const { left, top, width, height } = container.getBoundingClientRect();
+                    
+                    const x = (e.clientX - left) / width - 0.5;
+                    const y = (e.clientY - top) / height - 0.5;
+                    
+                    cube.style.transform = `rotateX(${y * 100}deg) rotateY(${x * 100}deg)`;
+                    cube.style.animation = 'none';
+                });
+
+                container.addEventListener('mouseleave', () => {
+                    cube.style.transform = '';
+                    cube.style.animation = 'rotateCube 20s infinite linear';
+                });
+            }
+        }
+
+        // INIT ALL SKILLS ON LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            initTypewriter('typewriterText');
+            initTiltCards();
+            initInteractiveCube();
+        });
+    </script>
+</body>
+</html>

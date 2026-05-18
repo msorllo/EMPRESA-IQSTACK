@@ -1,0 +1,32 @@
+# Node dependencias
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+
+# SQLite logs temporales
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Sistema Operativo e IDEs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archivos de Agentes e IA
+SKILLS/
+.gemini/
+artifacts/
+brain/
+temp/
+tmp/
+*.log
+*.tmp
