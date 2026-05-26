@@ -78,7 +78,7 @@ Para agilizar el testeo de los diferentes roles, puedes usar los botones de **"A
 *   **Email**: `rosa@panaderialopez.com`
 *   **Contraseña**: `password123`
 
-### 🛡️ Rol Administrador (Andrei Chivu - IQ STACK)
+### 🛡️ Rol Administrador (Marco Sorli - IQ STACK)
 *   **Email**: `admin@iqstack.es`
 *   **Contraseña**: `admin123`
 
